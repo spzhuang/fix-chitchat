@@ -24,7 +24,7 @@ python3.6、 transformers==2.1.1、pytorch==1.3.1 \
 
 ## 项目结构
 - config:存放GPT2模型的参数的配置文件
-- GPT2-chitchat :
+- GPT2-chit :
     - data_samples
         - 中文闲聊语料.txt: 中文闲聊语料 
         - LCCD10w.txt: 10W条样例大小的LCCD语料
