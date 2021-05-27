@@ -6,6 +6,9 @@
 ## UPDATE 2019.12.17
 基于微软的论文[DialoGPT:Large-Scale Generative Pre-training for Conversational Response Generation](https://arxiv.xilesou.top/pdf/1911.00536.pdf)添加了MMI Model(maximum mutual information scoring function),对dialogue model生成的多个response进行筛选
 
+## UPDATE 轼子的贡献 2021.05.27
+1. 轼子针对此项目的数据读取进行了修改，原先项目处理数据流程如下，python读取数据存为string格式，然后用split方法得到list格式数据，然后对每个数据使用bert.tokenized进行token处理，每分好一个数据就写入到一个文件中，最终得到这些数据的tokenized化数据，将原本的字符串转化成了数字。这种方法在面对小型数据（100M）以内的，其速度尚可，但是随着数据量的增加，其速度越来越难以忍受，当需要处理1G以上的数据时，需要2000+小时的处理时间，这是无法忍受的。轼子对其进行改进，得到文件的句柄后，每次使用readline方法按行读取，直到一定行数并且还是该数据终止为此（比如每次1000行，如果1000行没有结束数据，就继续读取下一行，直到该数据结束。读取完这批次数据后，再按批次进行token化，按批次处理，将这批数据token后，一次性写入文件中，这是一个循环节，然后文件会继续读取下一个100000行的处理，直到文件读完。使用这个方法进行文件的读写，能够将原先2000+小时的读取时间，减小到只需要10分钟左右的时间，读写速度加快1万倍以上。
+2. 轼子使用LCCD语料训练了一个闲聊模型，放在/mmi_model/mmi_model_epoch3里面，LCCD.txt的大小达到了1.17G，其来源于https://github.com/thu-coai/CDial-GPT.
 
 ## 项目描述
 - 本项目使用GPT2模型对中文闲聊语料进行训练，使用 HuggingFace的[transformers](https://github.com/huggingface/transformers)实现GPT2模型的编写与训练。
@@ -16,14 +19,15 @@
 - 代码中给出了许多详细的中文注释，方便大家更好地理解代码(能力有限，可能有些代码或注释有误，望大家不吝赐教)
 
 ## 运行环境
-python3.6、 transformers==2.1.1、pytorch==1.3.1
+python3.6、 transformers==2.1.1、pytorch==1.3.1 \
+或者(轼子使用)：python3.7.7 transformers==4.6.0、pytorch==1.6.0 
 
 ## 项目结构
 - config:存放GPT2模型的参数的配置文件
-- data
-    - train.txt:默认的原始训练集文件，存放闲聊语料 
-    - train_tokenized.txt:对原始训练语料进行顺序tokenize之后的文件，用于dialogue model的训练
-    - train_mmi_tokenized.txt:对原始训练语料进行逆序tokenize之后的文件，用于mmi model的训练
+- data_samples
+    - 中文闲聊语料.txt: 中文闲聊语料 
+    - LCCD10w.txt: 10W条样例大小的LCCD语料
+    - train.txt: 默认的原始训练集文件，存放闲聊语料 
 - dialogue_model:存放对话生成的模型
 - mmi_model:存放MMI模型(maximum mutual information scoring function)，用于预测P(Source|response)
 - sample:存放人机闲聊生成的历史聊天记录
@@ -100,8 +104,10 @@ MMI Model也是一个基于GPT2的生成模型，将每条训练数据进行"逆
 ```
 
 ## 模型分享
-闲聊语料大小为67M，包含50w个多轮对话。使用该语料训练了两个模型dialogue_model与mmi_model
+内含有一个训练了3个epoch的，使用数据为LCCD.txt(1.5G)的闲聊模型，放在./mmi_model/mmi_model_epoch3里面
 
+此外，
+闲聊语料大小为67M，包含50w个多轮对话。使用该语料训练了两个模型dialogue_model与mmi_model
 |模型 | 百度网盘 |GoogleDrive |模型描述|
 |---------|--------|--------|--------|
 |dialogue_model | [百度网盘【提取码:osi6】](https://pan.baidu.com/s/1qDZ24VKLBU9GKARX9Ev65g) | [GoogleDrive](https://drive.google.com/drive/folders/1Ogz3eapvtvdY4VUcY9AEwMbNRivLKhri?usp=sharing) |使用闲聊语料训练了40个epoch，最终loss在2.0左右，继续训练的话，loss应该还能继续下降。|
@@ -110,6 +116,10 @@ MMI Model也是一个基于GPT2的生成模型，将每条训练数据进行"逆
 ## 模型使用方法
 
 把下载好的模型文件夹dialogue_model与mmi_model放在项目根目录下(否则需要通过--dialogue_model_path与--mmi_model_path参数指定对应模型的路径)，执行如下命令:
+- 训练模型：python train.py --device=0,1 --train_raw_path='./data/你的数据.txt' --raw --epochs=5 --batch_size=8 --train_mmi --train_mmi_tokenized_path='./data/你的数据tokenized.txt'
+- 人机交互：python interact_mmi.py --device=0 --mmi_model_path='./mmi_model/mmi_model_epoch3/' \
+**注意1**:device参数指定训练的GPU，如果有两张卡，就用0,1;如果只有一张卡,就用0，如果没有卡，建议不要训练。  raw参数指定进程token化原始语料，如果已经token了一次，就不要指定这个参数，模型会自动调用train_mmi_tokenized_path的分词化文件，该文件也用来存储处理的原始语料。\
+**注意2**:人机交互中，建议直接使用训练好的模型，该模型就是训练了120小时左右，使用LCCD语料训练得到的模型。
 ### 仅使用dialogue_model进行生成
 ``` bash
 python interact.py --no_cuda(使用默认参数，不使用GPU。由于闲聊对话生成的内容长度不是很长，因此生成部分在CPU上跑速度也挺快的)
@@ -120,7 +130,7 @@ python interact.py --no_cuda --dialogue_model_path path_to_dialogue_model --max_
 或
 python interact.py --no_cuda --max_history_len 5 --topk 8(未指定--dialogue_model_path参数，默认为dialogue_model)
 ``` 
-输入Ctrl+Z结束对话之后，聊天记录将保存到sample目录下的sample.txt文件中
+输入quit结束对话之后，聊天记录将保存到sample目录下的sample.txt文件中
 
 ### 使用dialogue_model生成多个候选response，然后使用mmi_model选取互信息loss最小的response
 interact_mmi.py的用法与interact.py类似
@@ -133,7 +143,7 @@ python interact_mmi.py --no_cuda --debug(debug模式，可以看到生成的所�
 或
 python interact_mmi.py --no_cuda --dialogue_model_path path_to_dialogue_model --mmi_model_path path_to_mmi_model(自定义模型路径)
 ``` 
-输入Ctrl+Z结束对话之后，聊天记录将保存到sample目录下的mmi_samples.txt文件中
+输入quit结束对话之后，聊天记录将保存到sample目录下的mmi_samples.txt文件中
 
 更多的参数介绍，可直接看interact.py和interact_mmi.py中的setup_train_args()函数中的参数说明
 
