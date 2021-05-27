@@ -150,29 +150,7 @@ python interact_mmi.py --no_cuda --dialogue_model_path path_to_dialogue_model --
 ## interact.py与interact_mmi.py的参数
 执行interact.py时，可以尝试通过调整topk、topp、repetition_penalty、max_history_len等参数，调整生成的效果。详细的参数描述可以查看interact.py的set_interact_args()函数
 
-## 训练模型
-在项目根目录下创建data文件夹，将原始训练语料命名为train.txt，存放在该目录下。train.txt的格式如下，每段闲聊之间间隔一行。
 
-![avatar](image/chitchat_demo.png)
-
-训练模型：
-``` bash
-# 若是训练mmi_model则需要指定--train_mmi参数；若是训练dialogue_model，则不需要指定--train_mmi参数
-
-#训练dialogue_model
-python train.py --epochs 30 --batch_size 8 --device 0,1 --raw(若要对原始训练语料进行tokenize，则要指定--raw参数。若要用GPU训练，则通过--device指定GPU)
-或
-python train.py --epochs 30 --batch_size 8 --no_cuda --raw(指定--no_cuda参数，则使用CPU训练，速度要慢得多)
-或
-python train.py --epochs 30 --batch_size 8 --no_cuda(若已经对原始语料进行tokenize，可以不用指定--raw，避免重复tokenize，节约时间)
-
-#训练mmi_model,要指定--train_mmi参数
-python train.py --epochs 30 --batch_size 8 --device 0,1 --raw --train_mmi(对原始训练语料进行逆序拼接，tokenize，并且训练mmi_model)
-或
-python train.py --epochs 30 --batch_size 8 --device 0,1 --train_mmi(若已经对原始训练语料tokenize，则直接训练mmi_model)
-或
-python train.py --epochs 30 --batch_size 8 --device 0,1 --train_mmi --pretrained_model path_to_pretrained_model(在与训练模型基础上继续训练)
-```
 更多的参数介绍，可直接看train.py中的setup_train_args()函数中的参数说明
 
 ## interact.py生成样例
