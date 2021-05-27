@@ -24,10 +24,11 @@ python3.6、 transformers==2.1.1、pytorch==1.3.1 \
 
 ## 项目结构
 - config:存放GPT2模型的参数的配置文件
-- data_samples
-    - 中文闲聊语料.txt: 中文闲聊语料 
-    - LCCD10w.txt: 10W条样例大小的LCCD语料
-    - train.txt: 默认的原始训练集文件，存放闲聊语料 
+- GPT2-chitchat :
+    - data_samples
+        - 中文闲聊语料.txt: 中文闲聊语料 
+        - LCCD10w.txt: 10W条样例大小的LCCD语料
+        - train.txt: 默认的原始训练集文件，存放闲聊语料 
 - dialogue_model:存放对话生成的模型
 - mmi_model:存放MMI模型(maximum mutual information scoring function)，用于预测P(Source|response)
 - sample:存放人机闲聊生成的历史聊天记录
